@@ -29,7 +29,7 @@ export default function UserRoutes(app, db) {
     res.json(updatedUser);
   };
   const signup = (req, res) => {
-    const user = dao.findUserByUsername(req.body.loginId);
+    const user = dao.findUserByUsername(req.body.username);
     if (user) {
       res.status(400).json({ message: "Username already in use" });
       return;
@@ -39,8 +39,8 @@ export default function UserRoutes(app, db) {
     res.json(newUser);
   };
   const signin = (req, res) => {
-    const { loginId, password } = req.body;
-    const user = dao.findUserByCredentials(loginId, password);
+    const { username, password } = req.body;
+    const user = dao.findUserByCredentials(username, password);
     if (user) {
       req.session["currentUser"] = user;
       res.json(user);
