@@ -15,8 +15,9 @@ import Lab5 from "./Lab5/index.js";
 import db from "./Kambaz/Database/index.js"; 
 import UserRoutes from "./Kambaz/Users/routes.js";
 import CourseRoutes from "./Kambaz/Courses/routes.js";
+import ModulesRoutes from "./Kambaz/Modules/routes.js";
 import AssignmentRoutes from "./Kambaz/Assignments/routes.js"; // New: For Assignment CRUD
-// import EnrollmentRoutes from "./Kambaz/Enrollments/routes.js"; // New: For Enrollment CRUD
+import EnrollmentRoutes from "./Kambaz/Enrollments/routes.js";
 // --- End Imports ---
 
 
@@ -56,8 +57,9 @@ app.use(express.json());
 // --- 4. Route Registration (Pass 'app' and 'db' to all data-handling modules) ---
 UserRoutes(app, db);
 CourseRoutes(app, db);
+ModulesRoutes(app,db)
 AssignmentRoutes(app, db);  // Register Assignment routes
-// EnrollmentRoutes(app, db);  // Register Enrollment routes
+EnrollmentRoutes(app, db);
 
 // Legacy/Simple Routes
 Lab5(app);

@@ -9,6 +9,17 @@ export default function AssignmentRoutes(app, db) {
     res.json(assignments);
   };
   
+  // ✅ ADDED: Route handler for retrieving a single assignment
+  const findAssignmentById = (req, res) => {
+    const { assignmentId } = req.params;
+    const assignment = dao.findAssignmentById(assignmentId);
+    
+    if (!assignment) {
+      return res.sendStatus(404); // Not Found
+    }
+    res.json(assignment);
+  };
+
   const createAssignment = (req, res) => {
     const { courseId } = req.params;
     const assignment = {
@@ -28,12 +39,18 @@ export default function AssignmentRoutes(app, db) {
   const updateAssignment = (req, res) => {
     const { assignmentId } = req.params;
     const updates = req.body;
-    const status = dao.updateAssignment(assignmentId, updates);
-    res.send(status);
+    const updated = dao.updateAssignment(assignmentId, updates); // Returns the updated object or null
+    
+    if (!updated) {
+      return res.sendStatus(404);
+    }
+    res.json(updated); // ✅ Send back the updated object for Redux sync
   };
 
-  app.get("/api/courses/:courseId/assignments", findAssignmentsForCourse);
-  app.post("/api/courses/:courseId/assignments", createAssignment);
-  app.delete("/api/assignments/:assignmentId", deleteAssignment);
-  app.put("/api/assignments/:assignmentId", updateAssignment);
+  app.get(  "/api/courses/:courseId/assignments", findAssignmentsForCourse);
+  // ✅ ADDED ROUTE: Read a single assignment by ID
+  app.get(  "/api/assignments/:assignmentId",      findAssignmentById); 
+  app.post( "/api/courses/:courseId/assignments", createAssignment);
+  app.delete("/api/assignments/:assignmentId",    deleteAssignment);
+  app.put(  "/api/assignments/:assignmentId",      updateAssignment);
 }
