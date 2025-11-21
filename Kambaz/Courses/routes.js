@@ -6,13 +6,13 @@ export default function CourseRoutes(app, db) {
   const enrollmentsDao = EnrollmentsDao(db);
 
   // --- READ (All Courses - Unfiltered) ---
-  const findAllCourses = (req, res) => {
-    const courses = dao.findAllCourses();
+  const findAllCourses = async (req, res) => {
+    const courses = await dao.findAllCourses(); // Added await
     res.send(courses);
   };
   
-  // --- 2. READ (Dashboard Filter - Fixes the 8/2 course issue) ---
-  const findCoursesForEnrolledUser = (req, res) => {
+  // --- 2. READ (Dashboard Filter) ---
+  const findCoursesForEnrolledUser = async (req, res) => { // Added async
     let { userId } = req.params;
     
     // Authorization Check
@@ -26,7 +26,8 @@ export default function CourseRoutes(app, db) {
     }
     
     // Data Filtering Logic
-    const enrolledCourseIds = enrollmentsDao.findCoursesForUser(userId); 
+    // Enrollment DAO functions should now be awaited
+    const enrolledCourseIds = await enrollmentsDao.findCoursesForUser(userId); 
     const enrolledCourses = db.courses.filter((course) => 
       enrolledCourseIds.includes(course._id)
     );
@@ -34,8 +35,8 @@ export default function CourseRoutes(app, db) {
     res.json(enrolledCourses);
   };
 
-  // --- 3. CREATE (Add New Course - The working logic) ---
-  const createCourse = (req, res) => {
+  // --- 3. CREATE (Add New Course) ---
+  const createCourse = async (req, res) => { // Added async
     // Authorization Check
     const currentUser = req.session["currentUser"];
     if (!currentUser) {
@@ -43,22 +44,22 @@ export default function CourseRoutes(app, db) {
       return;
     }
     // CRITICAL: Pass BOTH arguments to the DAO for creation and enrollment
-    const newCourse = dao.createCourse(req.body, currentUser._id);
+    const newCourse = await dao.createCourse(req.body, currentUser._id); // Added await
     res.json(newCourse);
   };
 
   // --- 4. DELETE (Remove Course) ---
-  const deleteCourse = (req, res) => {
+  const deleteCourse = async (req, res) => { // Added async
     const { courseId } = req.params;
-    dao.deleteCourse(courseId); 
+    await dao.deleteCourse(courseId); // Added await
     res.sendStatus(200);
   };
 
   // --- 5. UPDATE (Edit Course Details) ---
-  const updateCourse = (req, res) => {
+  const updateCourse = async (req, res) => { // Added async
     const { courseId } = req.params;
     const courseUpdates = req.body;
-    const status = dao.updateCourse(courseId, courseUpdates);
+    const status = await dao.updateCourse(courseId, courseUpdates); // Added await
     res.send(status);
   };
 
@@ -67,9 +68,9 @@ export default function CourseRoutes(app, db) {
   app.delete("/api/courses/:courseId", deleteCourse);
   app.put("/api/courses/:courseId", updateCourse);
   
-  // CRITICAL: Dashboard Filter Route (Fixes the 8 course issue)
+  // Dashboard Filter Route
   app.get("/api/users/:userId/courses", findCoursesForEnrolledUser);
   
-  // CRITICAL: Add Course Route (Fixes the adding issue)
+  // Add Course Route
   app.post("/api/users/current/courses", createCourse); 
 }

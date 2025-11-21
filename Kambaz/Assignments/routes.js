@@ -48,9 +48,8 @@ export default function AssignmentRoutes(app, db) {
   };
 
   app.get(  "/api/courses/:courseId/assignments", findAssignmentsForCourse);
-  // ✅ ADDED ROUTE: Read a single assignment by ID
   app.get(  "/api/assignments/:assignmentId",      findAssignmentById); 
   app.post( "/api/courses/:courseId/assignments", createAssignment);
   app.delete("/api/assignments/:assignmentId",    deleteAssignment);
-  app.put(  "/api/assignments/:assignmentId",      updateAssignment);
+  app.put(  "/api/assignments/:assignmentId",   updateAssignment);
 }
