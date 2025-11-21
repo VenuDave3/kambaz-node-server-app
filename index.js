@@ -41,14 +41,15 @@ const sessionOptions = {
 };
 
 // Conditional secure settings for production (non-local) environments
-if (process.env.SERVER_ENV !== "development") {
-  sessionOptions.proxy = true;
-  sessionOptions.cookie = {
-    sameSite: "none",
-    secure: true,
-    domain: process.env.SERVER_URL,
-  };
-}
+// if (process.env.SERVER_ENV !== "development") {
+//   sessionOptions.proxy = true;
+//   sessionOptions.cookie = {
+//     sameSite: "none",
+//     secure: true,
+//     domain: process.env.SERVER_URL,
+//   };
+// }
+console.log(sessionOptions);
 app.use(session(sessionOptions));
 
 // --- 3. Body Parser (Must be after CORS and Session) ---
@@ -58,7 +59,7 @@ app.use(express.json());
 UserRoutes(app, db);
 CourseRoutes(app, db);
 ModulesRoutes(app,db)
-AssignmentRoutes(app, db);  // Register Assignment routes
+AssignmentRoutes(app, db);  
 EnrollmentRoutes(app, db);
 
 // Legacy/Simple Routes
