@@ -63,14 +63,8 @@ export default function EnrollmentsRoutes(app, db) {
   
   // --- Route Definitions ---
   
-  // ✅ NEW ROUTE: Implements the endpoint the client was missing (GET /api/enrollments)
   app.get("/api/enrollments", findAllEnrollmentsApi);
-
-  // This route is implicitly covered by the more general CourseRoutes implementation, 
-  // but it's okay to keep for compatibility.
   app.get("/api/users/current/courses", findMyCourses); 
-
-  // 🚀 CRITICAL ROUTES FOR ENROLLMENT/UNENROLLMENT
   app.post("/api/users/:uid/courses/:cid", enrollUser);
   app.delete("/api/users/:uid/courses/:cid", unenrollUser);
 }
