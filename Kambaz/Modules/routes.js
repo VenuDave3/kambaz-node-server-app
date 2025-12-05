@@ -1,61 +1,41 @@
-import ModulesDao from "../Modules/dao.js";
+import ModulesDao from "./dao.js";
 
 export default function ModulesRoutes(app, db) {
   const dao = ModulesDao(db);
-  
-  // --- READ (Public Access) ---
-  const findModulesForCourse = (req, res) => {
+
+  const findModulesForCourse = async (req, res) => {
     const { courseId } = req.params;
-    const modules = dao.findModulesForCourse(courseId);
-    res.json(modules);
+    const modules = await dao.findModulesForCourse(courseId);
+    res.json(modules || []);
   };
-  
-  // --- CREATE (Authenticated Access) ---
-  const createModuleForCourse = (req, res) => {
-    const currentUser = req.session["currentUser"];
-    if (!currentUser) {
-      res.sendStatus(401);
-      return;
-    }
+
+  const createModuleForCourse = async (req, res) => {
     const { courseId } = req.params;
     const module = {
       ...req.body,
-      course: courseId, // Link the module to the course ID
+      course: courseId,
     };
-    const newModule = dao.createModule(module);
+    const newModule = await dao.createModule(courseId, module);
     res.send(newModule);
   };
-  
-  // --- DELETE (Authenticated Access) ---
-  const deleteModule = (req, res) => {
-    // FIX 1: Add Authorization Check
-    if (!req.session["currentUser"]) {
-      res.sendStatus(401);
-      return;
-    }
-    const { moduleId } = req.params;
-    const status = dao.deleteModule(moduleId);
+
+  const deleteModule = async (req, res) => {
+    const { courseId, moduleId } = req.params;
+    const status = await dao.deleteModule(courseId, moduleId);
     res.send(status);
   };
 
-  // --- UPDATE (Authenticated Access) ---
-  const updateModule = (req, res) => {
-    // FIX 2: Add Authorization Check
-    if (!req.session["currentUser"]) {
-      res.sendStatus(401);
-      return;
-    }
-    const { moduleId } = req.params;
+  const updateModule = async (req, res) => {
+    const { courseId, moduleId } = req.params;
     const moduleUpdates = req.body;
-    
-    // FIX 3: Route should send back the updated object, not just a status.
-    const updatedModule = dao.updateModule(moduleId, moduleUpdates); 
-    res.send(updatedModule); // Send the updated module back to the client
+    const status = await dao.updateModule(courseId, moduleId, moduleUpdates);
+    res.send(status);
   };
 
-  // --- Route Definitions ---
   app.get("/api/courses/:courseId/modules", findModulesForCourse);
   app.post("/api/courses/:courseId/modules", createModuleForCourse);
-  app.delete("/api/modules/:moduleId", deleteModule);
-  app.put("/api/modules/:moduleId", updateModule);
+  
+  // NOTE: Changed to include :courseId in path
+  app.delete("/api/courses/:courseId/modules/:moduleId", deleteModule);
+  app.put("/api/courses/:courseId/modules/:moduleId", updateModule);
 }

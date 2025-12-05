@@ -2,6 +2,12 @@ import "dotenv/config";
 import express from 'express';
 import cors from "cors";
 import session from "express-session"; 
+import mongoose from "mongoose";
+
+// CONNECT TO DATABASE
+const CONNECTION_STRING = process.env.DATABASE_CONNECTION_STRING || "mongodb://127.0.0.1:27017/kambaz";
+mongoose.connect(CONNECTION_STRING);
+
 
 // --- Core Route/Data Imports ---
 // IMPORTANT: These paths assume 'index.js' is in the root (kambaz-node-server-app/)
@@ -16,8 +22,8 @@ import db from "./Kambaz/Database/index.js";
 import UserRoutes from "./Kambaz/Users/routes.js";
 import CourseRoutes from "./Kambaz/Courses/routes.js";
 import ModulesRoutes from "./Kambaz/Modules/routes.js";
-import AssignmentRoutes from "./Kambaz/Assignments/routes.js"; // New: For Assignment CRUD
-import EnrollmentRoutes from "./Kambaz/Enrollments/routes.js";
+import AssignmentRoutes from "./Kambaz/Assignments/routes.js"; 
+// import EnrollmentRoutes from "./Kambaz/Enrollments/routes.js";
 // --- End Imports ---
 
 
@@ -45,7 +51,7 @@ if (process.env.SERVER_ENV !== "development") {
   sessionOptions.proxy = true;
   sessionOptions.cookie = {
     sameSite: "none",
-    secure: true,
+    secure: true
     // domain: process.env.SERVER_URL,
   };
 }
@@ -61,7 +67,7 @@ UserRoutes(app, db);
 CourseRoutes(app, db);
 ModulesRoutes(app,db)
 AssignmentRoutes(app, db);  
-EnrollmentRoutes(app, db);
+// EnrollmentRoutes(app, db);
 
 // Legacy/Simple Routes
 Lab5(app);

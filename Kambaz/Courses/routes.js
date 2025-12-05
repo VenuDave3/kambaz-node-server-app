@@ -1,21 +1,17 @@
 import CoursesDao from "./dao.js";
-import EnrollmentsDao from "../Enrollments/dao.js"; 
+import EnrollmentsDao from "../Enrollments/dao.js";
 
 export default function CourseRoutes(app, db) {
   const dao = CoursesDao(db);
   const enrollmentsDao = EnrollmentsDao(db);
 
-  // --- READ (All Courses - Unfiltered) ---
+  // ... (Keep findAllCourses, findCoursesForEnrolledUser, create, delete, update, enroll, unenroll) ...
   const findAllCourses = async (req, res) => {
-    const courses = await dao.findAllCourses(); // Added await
-    res.send(courses);
+    const courses = await dao.findAllCourses();
+    res.json(courses);
   };
-  
-  // --- 2. READ (Dashboard Filter) ---
-  const findCoursesForEnrolledUser = async (req, res) => { // Added async
+  const findCoursesForEnrolledUser = async (req, res) => {
     let { userId } = req.params;
-    
-    // Authorization Check
     if (userId === "current") {
       const currentUser = req.session["currentUser"];
       if (!currentUser) {
@@ -24,53 +20,61 @@ export default function CourseRoutes(app, db) {
       }
       userId = currentUser._id;
     }
-    
-    // Data Filtering Logic
-    // Enrollment DAO functions should now be awaited
-    const enrolledCourseIds = await enrollmentsDao.findCoursesForUser(userId); 
-    const enrolledCourses = db.courses.filter((course) => 
-      enrolledCourseIds.includes(course._id)
-    );
-    
-    res.json(enrolledCourses);
+    const courses = await enrollmentsDao.findCoursesForUser(userId);
+    res.json(courses);
   };
-
-  // --- 3. CREATE (Add New Course) ---
-  const createCourse = async (req, res) => { // Added async
-    // Authorization Check
+  const createCourse = async (req, res) => {
     const currentUser = req.session["currentUser"];
-    if (!currentUser) {
-      res.sendStatus(401);
-      return;
+    const newCourse = await dao.createCourse(req.body);
+    if (currentUser) {
+      await enrollmentsDao.enrollUserInCourse(currentUser._id, newCourse._id);
     }
-    // CRITICAL: Pass BOTH arguments to the DAO for creation and enrollment
-    const newCourse = await dao.createCourse(req.body, currentUser._id); // Added await
     res.json(newCourse);
   };
-
-  // --- 4. DELETE (Remove Course) ---
-  const deleteCourse = async (req, res) => { // Added async
+  const deleteCourse = async (req, res) => {
     const { courseId } = req.params;
-    await dao.deleteCourse(courseId); // Added await
-    res.sendStatus(200);
+    await enrollmentsDao.unenrollAllUsersFromCourse(courseId);
+    const status = await dao.deleteCourse(courseId);
+    res.send(status);
   };
-
-  // --- 5. UPDATE (Edit Course Details) ---
-  const updateCourse = async (req, res) => { // Added async
+  const updateCourse = async (req, res) => {
     const { courseId } = req.params;
     const courseUpdates = req.body;
-    const status = await dao.updateCourse(courseId, courseUpdates); // Added await
+    const status = await dao.updateCourse(courseId, courseUpdates);
+    res.send(status);
+  };
+  const enrollUserInCourse = async (req, res) => {
+    let { uid, cid } = req.params;
+    if (uid === "current") {
+      const currentUser = req.session["currentUser"];
+      uid = currentUser._id;
+    }
+    const status = await enrollmentsDao.enrollUserInCourse(uid, cid);
+    res.send(status);
+  };
+  const unenrollUserFromCourse = async (req, res) => {
+    let { uid, cid } = req.params;
+    if (uid === "current") {
+      const currentUser = req.session["currentUser"];
+      uid = currentUser._id;
+    }
+    const status = await enrollmentsDao.unenrollUserFromCourse(uid, cid);
     res.send(status);
   };
 
-  // --- Route Definitions ---
+  // 6.4.3.5: Get Users for a specific Course
+  const findUsersForCourse = async (req, res) => {
+    const { cid } = req.params;
+    const users = await enrollmentsDao.findUsersForCourse(cid);
+    res.json(users);
+  };
+
   app.get("/api/courses", findAllCourses);
+  app.get("/api/users/:userId/courses", findCoursesForEnrolledUser);
+  app.post("/api/users/current/courses", createCourse);
   app.delete("/api/courses/:courseId", deleteCourse);
   app.put("/api/courses/:courseId", updateCourse);
-  
-  // Dashboard Filter Route
-  app.get("/api/users/:userId/courses", findCoursesForEnrolledUser);
-  
-  // Add Course Route
-  app.post("/api/users/current/courses", createCourse); 
+  app.post("/api/users/:uid/courses/:cid", enrollUserInCourse);
+  app.delete("/api/users/:uid/courses/:cid", unenrollUserFromCourse);
+  app.get("/api/courses/:cid/users", findUsersForCourse);
 }

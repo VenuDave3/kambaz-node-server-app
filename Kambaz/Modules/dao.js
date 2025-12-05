@@ -1,47 +1,48 @@
 import { v4 as uuidv4 } from "uuid";
+import model from "../Courses/model.js"; // Import Course Model
 
 export default function ModulesDao(db) {
   
-  // --- READ ---
-  function findModulesForCourse(courseId) {
-    const { modules } = db;
-    return modules.filter((module) => module.course === courseId);
+  // READ: Find the course by ID, then return its 'modules' array
+  async function findModulesForCourse(courseId) {
+    const course = await model.findById(courseId);
+    if (!course) return []; // Safety check: return empty array if course not found
+    return course.modules;
   }
-  
-  // --- CREATE ---
-  function createModule(module) {
+
+  // CREATE: Find course by ID, push new module to 'modules' array
+  async function createModule(courseId, module) {
     const newModule = { ...module, _id: uuidv4() };
-    
-    // Use spread operator to append the new module to the persistent array
-    db.modules = [...db.modules, newModule]; 
-    
+    await model.updateOne(
+      { _id: courseId },
+      { $push: { modules: newModule } }
+    );
     return newModule;
   }
-  
-  // --- DELETE ---
-  function deleteModule(moduleId) {
-    // Filter out the module by ID and reassign the master array
-    db.modules = db.modules.filter((module) => module._id !== moduleId);
-    
-    // CRITICAL: Return an object/status for client confirmation
-    return { status: "deleted" }; 
+
+  // DELETE: Find course by ID, pull module from 'modules' array by module ID
+  async function deleteModule(courseId, moduleId) {
+    const status = await model.updateOne(
+      { _id: courseId },
+      { $pull: { modules: { _id: moduleId } } }
+    );
+    return status;
   }
-  
-  // --- UPDATE ---
-  function updateModule(moduleId, moduleUpdates) {
-    // Find the module object by reference
-    const moduleToUpdate = db.modules.find((module) => module._id === moduleId);
+
+  // UPDATE: Find course, find specific sub-document, update it, and save
+  async function updateModule(courseId, moduleId, moduleUpdates) {
+    const course = await model.findById(courseId);
+    if (!course) return null; // Safety check
     
-    if (moduleToUpdate) {
-      // Mutate the object in place
-      Object.assign(moduleToUpdate, moduleUpdates);
-      
-      // CRITICAL: Return the updated object for Redux synchronization
-      return moduleToUpdate; 
+    const module = course.modules.id(moduleId);
+    if (module) {
+      Object.assign(module, moduleUpdates);
+      await course.save();
+      return module;
     }
-    return { status: "not found" };
+    return null;
   }
-  
+
   return {
     findModulesForCourse,
     createModule,

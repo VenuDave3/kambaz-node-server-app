@@ -1,62 +1,44 @@
-import { v4 as uuidv4 } from "uuid";
+import model from "./model.js";
 
 export default function EnrollmentsDao(db) {
   
-  function findMyEnrollments(userId) {
-    return db.enrollments.filter((e) => e.user === userId);
+  async function findAllEnrollments() {
+    return model.find();
   }
 
-  // NEW FUNCTION: Returns the list of all enrollment records
-  function findAllEnrollments() {
-    return db.enrollments; 
+  async function findCoursesForUser(userId) {
+    const enrollments = await model.find({ user: userId }).populate("course");
+    return enrollments.map((enrollment) => enrollment.course);
   }
 
-  function findCoursesForUser(userId) {
-    const userEnrollments = findMyEnrollments(userId);
-    // Returns an array of course IDs
-    return userEnrollments.map((enrollment) => enrollment.course);
+  async function findUsersForCourse(courseId) {
+    const enrollments = await model.find({ course: courseId }).populate("user");
+    return enrollments.map((enrollment) => enrollment.user);
   }
-  
-  // New/Updated: Enrolls a user in a course
+
   function enrollUserInCourse(userId, courseId) {
-    // Check if enrollment already exists to prevent duplicates (good practice)
-    const existing = db.enrollments.find(
-      (e) => e.user === userId && e.course === courseId
-    );
-    if (existing) return existing; 
-
-    // Create a new enrollment record
-    const newEnrollment = { 
-      _id: uuidv4(), 
-      user: userId, 
-      course: courseId, 
-      status: "ENROLLED" 
-    };
-    
-    db.enrollments.push(newEnrollment); 
-    
-    return newEnrollment;
+    return model.create({
+      _id: `${userId}-${courseId}`,
+      user: userId,
+      course: courseId,
+    });
   }
 
-  // New/Updated: Removes a single enrollment record
   function unenrollUserFromCourse(userId, courseId) {
-    // Overwrite the enrollments array, filtering out the matching record
-    db.enrollments = db.enrollments.filter(
-      (e) => !(e.user === userId && e.course === courseId)
-    );
-  }
-  
-  // Used by Courses DAO when a course is deleted
-  function unenrollAllUsersFromCourse(courseId) {
-    db.enrollments = db.enrollments.filter((e) => e.course !== courseId);
+    return model.deleteOne({ user: userId, course: courseId });
   }
 
-  return { 
-    enrollUserInCourse, 
-    unenrollUserFromCourse, 
-    findAllEnrollments, 
-    findMyEnrollments,
+  // 6.4.3.3: Delete all enrollments for a specific course
+  function unenrollAllUsersFromCourse(courseId) {
+    return model.deleteMany({ course: courseId });
+  }
+
+  return {
+    findAllEnrollments,
     findCoursesForUser,
-    unenrollAllUsersFromCourse, 
+    findUsersForCourse,
+    enrollUserInCourse,
+    unenrollUserFromCourse,
+    unenrollAllUsersFromCourse,
   };
 }
